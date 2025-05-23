@@ -1,0 +1,118 @@
+CODE!!!!!
+
+let rabbit;
+let fox;
+
+function setup() {
+  createCanvas(400,400);
+  rabbit = new Rabbit(random(width), random(height));
+  fox = new Fox(random(width), random(height));
+}
+
+function draw() {
+  background(220);
+
+  rabbit.wander();
+  rabbit.update();
+  rabbit.edges();
+  rabbit.display();
+
+  fox.hunt(rabbit);
+  fox.update();
+  fox.edges();
+  fox.display();
+}
+
+class Agent {
+  constructor(x, y) {
+    this.position = createVector(x, y);
+    this.velocity = p5.Vector.random2D();
+    this.acceleration = createVector(0, 0);
+    this.maxSpeed = 3;
+    this.maxForce = 0.2;
+  }
+
+  applyForce(force) {
+    this.acceleration.add(force);
+  }
+
+  update() {
+    this.velocity.add(this.acceleration);
+    this.velocity.limit(this.maxSpeed);
+    this.position.add(this.velocity);
+    this.acceleration.mult(0);
+  }
+
+  edges() {
+    if (this.position.x > width) this.position.x = 0;
+    if (this.position.x < 0) this.position.x = width;
+    if (this.position.y > height) this.position.y = 0;
+    if (this.position.y < 0) this.position.y = height;
+  }
+}
+
+class Rabbit extends Agent {
+  constructor(x, y) {
+    super(x, y);
+    this.wanderTheta = 0;
+  }
+
+  wander() {
+    let wanderRadius = 25;
+    let wanderDistance = 50;
+    let change = 0.3;
+
+    this.wanderTheta += random(-change, change);
+
+    let circlePos = this.velocity.copy();
+    circlePos.setMag(wanderDistance);
+    circlePos.add(this.position);
+
+    let h = this.velocity.heading();
+
+    let circleOffset = createVector(
+      wanderRadius * cos(this.wanderTheta + h),
+      wanderRadius * sin(this.wanderTheta + h)
+    );
+
+    let target = p5.Vector.add(circlePos, circleOffset);
+    let steer = p5.Vector.sub(target, this.position);
+    steer.setMag(this.maxForce);
+    this.applyForce(steer);
+  }
+
+  display() {
+    fill(255);
+    stroke(0);
+    ellipse(this.position.x, this.position.y, 16);
+  }
+}
+
+class Fox extends Agent {
+  constructor(x, y) {
+    super(x, y);
+    this.maxSpeed = 4;
+    this.maxForce = 0.3;
+  }
+
+  hunt(target) {
+    let desired = p5.Vector.sub(target.position, this.position);
+    let d = desired.mag();
+    desired.setMag(this.maxSpeed);
+
+    let steer = p5.Vector.sub(desired, this.velocity);
+    steer.limit(this.maxForce);
+
+    this.applyForce(steer);
+  }
+
+  display() {
+    fill(255, 0, 0);
+    stroke(0);
+    triangle(
+      this.position.x, this.position.y,
+      this.position.x - 10, this.position.y + 20,
+      this.position.x + 10, this.position.y + 20
+    );
+  }
+}
